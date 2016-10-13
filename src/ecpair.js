@@ -20,20 +20,13 @@ function ECPair (d, Q, options) {
     }, options)
   }
 
-  options = options || {}
-
   if (d) {
-    if (d.signum() <= 0) throw new Error('Private key must be greater than 0')
-    if (d.compareTo(secp256k1.n) >= 0) throw new Error('Private key must be less than the curve order')
-    if (Q) throw new TypeError('Unexpected publicKey parameter')
-
     this.d = d
   } else {
-    typeforce(types.ECPoint, Q)
-
     this.__Q = Q
   }
 
+  options = options || {}
   this.compressed = options.compressed === undefined ? true : options.compressed
   this.network = options.network || NETWORKS.bitcoin
 }
@@ -48,7 +41,28 @@ Object.defineProperty(ECPair.prototype, 'Q', {
   }
 })
 
-ECPair.fromPublicKeyBuffer = function (buffer, network) {
+// XXX: internal use only
+function __fromPrivateKeyInteger (d, options) {
+  if (d.signum() <= 0) throw new Error('Private key must be greater than 0')
+  if (d.compareTo(secp256k1.n) >= 0) throw new Error('Private key must be less than the curve order')
+
+  return new ECPair(d, null, options)
+}
+
+// XXX: internal use only
+function __fromPublicKeyPoint (Q, options) {
+  return new ECPair(null, Q, options)
+}
+
+function fromPrivateKeyBuffer (buffer, options) {
+  typeforce(types.UInt256, buffer)
+  var d = BigInteger.fromBuffer(d)
+
+  return new ECPair(d, null, options)
+}
+
+function fromPublicKeyBuffer (buffer, network) {
+  typeforce(types.ECPoint, Q)
   var Q = ecurve.Point.decodeFrom(secp256k1, buffer)
 
   return new ECPair(null, Q, {
@@ -57,7 +71,7 @@ ECPair.fromPublicKeyBuffer = function (buffer, network) {
   })
 }
 
-ECPair.fromWIF = function (string, network) {
+function fromWIF (string, network) {
   var decoded = wif.decode(string)
   var version = decoded.version
 
@@ -76,28 +90,22 @@ ECPair.fromWIF = function (string, network) {
     if (version !== network.wif) throw new Error('Invalid network version')
   }
 
-  var d = BigInteger.fromBuffer(decoded.privateKey)
-
-  return new ECPair(d, null, {
+  return fromPrivateKeyBuffer(decoded.privateKey, {
     compressed: decoded.compressed,
     network: network
   })
 }
 
-ECPair.makeRandom = function (options) {
+function makeRandom (options) {
   options = options || {}
 
   var rng = options.rng || randomBytes
-
-  var d
+  var buffer
   do {
-    var buffer = rng(32)
-    typeforce(types.Buffer256bit, buffer)
+    buffer = rng(32)
+  } while (!types.UInt256(buffer))
 
-    d = BigInteger.fromBuffer(buffer)
-  } while (d.signum() <= 0 || d.compareTo(secp256k1.n) >= 0)
-
-  return new ECPair(d, null, options)
+  return fromPrivateKeyBuffer(buffer, options)
 }
 
 ECPair.prototype.getAddress = function () {
@@ -110,6 +118,13 @@ ECPair.prototype.getNetwork = function () {
 
 ECPair.prototype.getPublicKeyBuffer = function () {
   return this.Q.getEncoded(this.compressed)
+}
+
+ECPair.prototype.neutered = function () {
+  return __fromPublicKeyPoint(this.Q, {
+    compressed: this.compressed,
+    network: this.network
+  })
 }
 
 ECPair.prototype.sign = function (hash) {
@@ -128,4 +143,13 @@ ECPair.prototype.verify = function (hash, signature) {
   return ecdsa.verify(hash, signature, this.Q)
 }
 
-module.exports = ECPair
+module.exports = {
+  fromPrivateKeyBuffer: fromPrivateKeyBuffer,
+  fromPublicKeyBuffer: fromPublicKeyBuffer,
+  fromWIF: fromWIF,
+  makeRandom: makeRandom,
+
+  // XXX: internal use only
+  __fromPrivateKeyInteger: __fromPrivateKeyInteger,
+  __fromPublicKeyPoint: __fromPublicKeyPoint
+}

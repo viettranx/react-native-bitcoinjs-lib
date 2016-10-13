@@ -7,7 +7,7 @@ var ecurve = require('ecurve')
 var proxyquire = require('proxyquire')
 var sinon = require('sinon')
 
-var BigInteger = require('bigi')
+var bigi = require('bigi')
 var ECPair = require('../src/ecpair')
 
 var fixtures = require('./fixtures/ecpair.json')
@@ -19,16 +19,18 @@ for (var networkName in NETWORKS) {
   NETWORKS_LIST.push(NETWORKS[networkName])
 }
 
+var ONE = new Buffer('0000000000000000000000000000000000000000000000000000000000000001', 'hex')
+
 describe('ECPair', function () {
-  describe('constructor', function () {
+  describe('fromPrivateKeyBuffer', function () {
     it('defaults to compressed', function () {
-      var keyPair = new ECPair(BigInteger.ONE)
+      var keyPair = ECPair.fromPrivateKeyBuffer(ONE)
 
       assert.strictEqual(keyPair.compressed, true)
     })
 
     it('supports the uncompressed option', function () {
-      var keyPair = new ECPair(BigInteger.ONE, null, {
+      var keyPair = ECPair.fromPrivateKeyBuffer(bigi.ONE, {
         compressed: false
       })
 
@@ -36,7 +38,7 @@ describe('ECPair', function () {
     })
 
     it('supports the network option', function () {
-      var keyPair = new ECPair(BigInteger.ONE, null, {
+      var keyPair = ECPair.fromPrivateKeyBuffer(bigi.ONE, {
         compressed: false,
         network: NETWORKS.testnet
       })
@@ -46,7 +48,7 @@ describe('ECPair', function () {
 
     fixtures.valid.forEach(function (f) {
       it('calculates the public point for ' + f.WIF, function () {
-        var d = new BigInteger(f.d)
+        var keyPair = ECPair.fromPrivateKeyBuffer(new Buffer(f.d, 'hex'), {
         var keyPair = new ECPair(d, null, {
           compressed: f.compressed
         })
@@ -57,7 +59,7 @@ describe('ECPair', function () {
 
     fixtures.invalid.constructor.forEach(function (f) {
       it('throws ' + f.exception, function () {
-        var d = f.d && new BigInteger(f.d)
+        var d = f.d && new bigi(f.d)
         var Q = f.Q && ecurve.Point.decodeFrom(curve, new Buffer(f.Q, 'hex'))
 
         assert.throws(function () {
@@ -71,7 +73,7 @@ describe('ECPair', function () {
     var keyPair
 
     beforeEach(function () {
-      keyPair = new ECPair(BigInteger.ONE)
+      keyPair = new ECPair(bigi.ONE)
     })
 
     it('wraps Q.getEncoded', sinon.test(function () {
@@ -165,12 +167,21 @@ describe('ECPair', function () {
       assert.strictEqual(keyPair.network, NETWORKS.testnet)
     })
 
-    it('loops until d is within interval [1, n - 1]', sinon.test(function () {
+    it('loops until d is within interval [1, n - 1] : 1', sinon.test(function () {
+      var rng = this.mock()
+      rng.exactly(2)
+      rng.onCall(0).returns(bigi.ZERO) // invalid length
+      rng.onCall(1).returns(bigi.ONE.toBuffer(32)) // === 1
+
+      ECPair.makeRandom({ rng: rng })
+    }))
+
+    it('loops until d is within interval [1, n - 1] : n -1', sinon.test(function () {
       var rng = this.mock()
       rng.exactly(3)
-      rng.onCall(0).returns(new BigInteger('0').toBuffer(32)) // < 1
+      rng.onCall(0).returns(bigi.ZERO.toBuffer(32)) // < 1
       rng.onCall(1).returns(curve.n.toBuffer(32)) // > n-1
-      rng.onCall(2).returns(new BigInteger('42').toBuffer(32)) // valid
+      rng.onCall(2).returns((curve.n.subtract(bigi.ONE)).toBuffer(32)) // === n-1
 
       ECPair.makeRandom({ rng: rng })
     }))

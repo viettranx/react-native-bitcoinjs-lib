@@ -39,10 +39,7 @@ HDNode.fromSeedBuffer = function (seed, network) {
 
   // In case IL is 0 or >= n, the master key is invalid
   // This is handled by the ECPair constructor
-  var pIL = BigInteger.fromBuffer(IL)
-  var keyPair = new ECPair(pIL, null, {
-    network: network
-  })
+  var keyPair = ECPair.fromPrivateKeyBuffer(IL, { network: network })
 
   return new HDNode(keyPair, IR)
 }
@@ -98,24 +95,19 @@ HDNode.fromBase58 = function (string, networks) {
   if (version === network.bip32.private) {
     if (buffer.readUInt8(45) !== 0x00) throw new Error('Invalid private key')
 
-    var d = BigInteger.fromBuffer(buffer.slice(46, 78))
-
-    keyPair = new ECPair(d, null, {
-      network: network
-    })
+    var d = buffer.slice(46, 78)
+    keyPair = ECPair.fromPrivateKeyBuffer(d, { network: network })
 
   // 33 bytes: public key data (0x02 + X or 0x03 + X)
   } else {
-    var Q = ecurve.Point.decodeFrom(curve, buffer.slice(45, 78))
-    if (!Q.compressed) throw new Error('Invalid public key')
+    var Q = buffer.slice(45, 78)
+    keyPair = ECPair.fromPublicKeyBuffer(Q, { network: network })
+
+    if (!keyPair.compressed) throw new Error('Invalid public key')
 
     // Verify that the X coordinate in the public point corresponds to a point on the curve.
     // If not, the extended public key is invalid.
-    curve.validate(Q)
-
-    keyPair = new ECPair(null, Q, {
-      network: network
-    })
+    curve.validate(keyPair.Q)
   }
 
   var hd = new HDNode(keyPair, chainCode)
@@ -147,11 +139,7 @@ HDNode.prototype.getPublicKeyBuffer = function () {
 }
 
 HDNode.prototype.neutered = function () {
-  var neuteredKeyPair = new ECPair(null, this.keyPair.Q, {
-    network: this.keyPair.network
-  })
-
-  var neutered = new HDNode(neuteredKeyPair, this.chainCode)
+  var neutered = new HDNode(this.keyPair.neutered(), this.chainCode)
   neutered.depth = this.depth
   neutered.index = this.index
   neutered.parentFingerprint = this.parentFingerprint
@@ -233,7 +221,6 @@ HDNode.prototype.derive = function (index) {
   var I = createHmac('sha512', this.chainCode).update(data).digest()
   var IL = I.slice(0, 32)
   var IR = I.slice(32)
-
   var pIL = BigInteger.fromBuffer(IL)
 
   // In case parse256(IL) >= n, proceed with the next value for i
@@ -252,7 +239,7 @@ HDNode.prototype.derive = function (index) {
       return this.derive(index + 1)
     }
 
-    derivedKeyPair = new ECPair(ki, null, {
+    derivedKeyPair = ECPair.__fromPrivateKeyInteger(ki, {
       network: this.keyPair.network
     })
 
@@ -267,7 +254,7 @@ HDNode.prototype.derive = function (index) {
       return this.derive(index + 1)
     }
 
-    derivedKeyPair = new ECPair(null, Ki, {
+    derivedKeyPair = ECPair.__fromPublicKeyPoint(Ki, {
       network: this.keyPair.network
     })
   }
@@ -290,7 +277,7 @@ HDNode.prototype.deriveHardened = function (index) {
 // Private === not neutered
 // Public === neutered
 HDNode.prototype.isNeutered = function () {
-  return !(this.keyPair.d)
+  return !this.keyPair.d
 }
 
 HDNode.prototype.derivePath = function (path) {
