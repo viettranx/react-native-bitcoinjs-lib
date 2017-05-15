@@ -54,7 +54,7 @@ Run the postinstall, it will create a shim.js file which you need to include in 
 
 Run the app
 
-`react-native run-android`
+`react-native run-android` or `react-native run-ios`
 
 ## Usage
 
