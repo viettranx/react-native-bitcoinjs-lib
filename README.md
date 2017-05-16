@@ -96,8 +96,8 @@ Run the example app or refer to the [original repository](https://github.com/bit
 
 - [BIP21](https://github.com/bitcoinjs/bip21) - A BIP21 compatible URL encoding utility library
 - [BIP38](https://github.com/bitcoinjs/bip38) - Passphrase-protected private keys
-- [BIP39](https://github.com/bitcoinjs/bip39) - Mnemonic generation for deterministic keys
-- [BIP32-Utils](https://github.com/bitcoinjs/bip32-utils) - A set of utilities for working with BIP32
+- [BIP39](https://github.com/novalabio/react-native-bip39) - ReactNative-ready Mnemonic generation for deterministic keys
+- [BIP32-Utils](https://github.com/novalabio/react-native-bip32-utils) - ReactNative-ready set of utilities for working with BIP32
 - [BIP32-Wallet](https://github.com/bitcoinjs/bip32-wallet) - A BIP32 Wallet backed by bitcoinjs-lib, lite on features but heavily tested
 - [BIP66](https://github.com/bitcoinjs/bip66) - Strict DER signature decoding
 - [BIP69](https://github.com/bitcoinjs/bip69) - Lexicographical Indexing of Transaction Inputs and Outputs
