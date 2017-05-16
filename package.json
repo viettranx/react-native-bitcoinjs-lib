@@ -1,6 +1,6 @@
 {
   "name": "react-native-bitcoinjs-lib",
-  "version": "2.3.6",
+  "version": "2.3.7",
   "description": "Bitcoin JavaScript library for React Native",
   "main": "./src/index.js",
   "engines": {
@@ -36,8 +36,8 @@
     },
     {
       "name": "Alberto Dallaporta",
-      "email": "alberto@nexustech.solutions",
-      "url": "https://nexustech.solutions"
+      "email": "alberto@novalab.io",
+      "url": "https://novalab.io"
     }
   ],
   "scripts": {
@@ -51,7 +51,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/nexustech-solutions/react-native-bitcoinjs-lib.git"
+    "url": "https://github.com/novalabio/react-native-bitcoinjs-lib"
   },
   "files": [
     "src"
