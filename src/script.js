@@ -187,22 +187,17 @@ function isCanonicalSignature (buffer) {
   return bip66.check(buffer.slice(0, -1))
 }
 
-module.exports = {
-  compile: compile,
-  decompile: decompile,
-  fromASM: fromASM,
-  toASM: toASM,
-  toStack: toStack,
-
-  number: require('./script_number'),
-
-  isCanonicalPubKey: isCanonicalPubKey,
-  isCanonicalSignature: isCanonicalSignature,
-  isPushOnly: isPushOnly,
-  isDefinedHashType: isDefinedHashType
-}
+exports.compile = compile
+exports.decompile = decompile
+exports.fromASM = fromASM
+exports.toASM  = toASM
+exports.toStack = toStack
+exports.number = require('./script_number')
+exports.isCanonicalPubKey = isCanonicalPubKey
+exports.isCanonicalSignature = isCanonicalSignature
+exports.isPushOnly = isPushOnly
+exports.isDefinedHashType = isDefinedHashType
 
 var templates = require('./templates')
-for (var key in templates) {
-  module.exports[key] = templates[key]
-}
+for (var k in templates)
+  exports[k] = templates[k]
