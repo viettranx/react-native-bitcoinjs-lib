@@ -1,3 +1,4 @@
+var ecc = require('tiny-secp256k1')
 var baddress = require('./address')
 var bcrypto = require('./crypto')
 var ecdsa = require('./ecdsa')
@@ -12,7 +13,7 @@ var BigInteger = require('bigi')
 var ecurve = require('ecurve')
 var secp256k1 = ecdsa.__curve
 
-function ECPair (d, Q, options) {
+function ECPair(d, Q, options) {
   if (options) {
     typeforce({
       compressed: types.maybe(types.Boolean),
@@ -69,7 +70,7 @@ ECPair.fromWIF = function (string, network) {
 
     if (!network) throw new Error('Unknown network version')
 
-  // otherwise, assume a network object (or default to bitcoin)
+    // otherwise, assume a network object (or default to bitcoin)
   } else {
     network = network || NETWORKS.bitcoin
 
@@ -111,6 +112,12 @@ ECPair.prototype.getNetwork = function () {
 ECPair.prototype.getPublicKeyBuffer = function () {
   return this.Q.getEncoded(this.compressed)
 }
+
+Object.defineProperty(ECPair.prototype, 'publicKey', {
+  get: function () {
+    return this.getPublicKeyBuffer()
+  }
+})
 
 ECPair.prototype.sign = function (hash) {
   if (!this.d) throw new Error('Missing private key')
